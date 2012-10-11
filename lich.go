@@ -1,22 +1,21 @@
-package main
+package lich
 
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"sort"
 )
 
 //DictFromMap returns an UnknownTypeError 
 //when it encounters values of an unknown type.
 type UnknownTypeError struct {
-	key   string
-	value interface{}
+	Key   string
+	Value interface{}
 }
 
 func (u UnknownTypeError) Error() string {
 	const panicmessage = "Cannot serialize unknown type.\nKey: %s\nValue: %v\nType: %T"
-	return fmt.Sprintf(panicmessage, u.key, u.value, u.value)
+	return fmt.Sprintf(panicmessage, u.Key, u.Value, u.Value)
 }
 
 type Element interface {
@@ -101,29 +100,4 @@ func DictFromMap(m map[string]interface{}) (Dict, error) {
 		}
 	}
 	return d, nil
-}
-
-func main() {
-
-	d1 := Dict{
-		"selling points": ArrayFromStrings("simple", "general", "human-sympathetic"),
-		"greeting":       Data([]byte{72, 101, 108, 108, 111}),
-		"fruit":          Array{Data("apple"), Data("banana"), Data("orange")},
-	}
-
-	fmt.Println(d1)
-
-	d2, err := DictFromMap(map[string]interface{}{
-		"greeting": map[string]interface{}{
-			"English":  []byte{72, 101, 108, 108, 111},
-			"Japanese": "Konnichiwa",
-			"Dog":      9.0,
-		},
-		"fruit":          []string{"apple", "banana", "orange"},
-		"selling points": ArrayFromStrings("simple", "general", "human-sympathetic"),
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(d2)
 }
