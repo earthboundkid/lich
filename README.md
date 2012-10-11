@@ -6,6 +6,5 @@ A port of Wolf Rentzsch's [Lich binary file format](https://github.com/rentzsch/
 Todo
 ====
 
-- New error return type
-- Add tests, examples
-- Parser (!!)
+- Add methods to turn lich data into regular Go-types.
+- Make an actual parser (!!)
