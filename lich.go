@@ -3,12 +3,21 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"sort"
 )
 
-//StrictMode controls whether or not DictFromMap panics when it encounters
-//values of an unknown type.
-var StrictMode = true
+//DictFromMap returns an UnknownTypeError 
+//when it encounters values of an unknown type.
+type UnknownTypeError struct {
+	key   string
+	value interface{}
+}
+
+func (u UnknownTypeError) Error() string {
+	const panicmessage = "Cannot serialize unknown type.\nKey: %s\nValue: %v\nType: %T"
+	return fmt.Sprintf(panicmessage, u.key, u.value, u.value)
+}
 
 type Element interface {
 	String() string
@@ -61,9 +70,7 @@ func (d Dict) String() string {
 	return fmt.Sprintf("%d{%s}", b.Len(), b.String())
 }
 
-func DictFromMap(m map[string]interface{}) Dict {
-	const panicmessage = "Cannot serialize unknown type.\nKey: %s\nValue: %v\nType: %T"
-
+func DictFromMap(m map[string]interface{}) (Dict, error) {
 	d := make(Dict)
 	for key := range m {
 		switch value := m[key].(type) {
@@ -83,15 +90,17 @@ func DictFromMap(m map[string]interface{}) Dict {
 			d[Data(key)] = ArrayFromStrings(value...)
 
 		case map[string]interface{}:
-			d[Data(key)] = DictFromMap(value)
+			subdict, err := DictFromMap(value)
+			if err != nil {
+				return Dict{}, err
+			}
+			d[Data(key)] = subdict
 
 		default:
-			if StrictMode {
-				panic(fmt.Sprintf(panicmessage, key, value, value))
-			}
+			return Dict{}, UnknownTypeError{key, value}
 		}
 	}
-	return d
+	return d, nil
 }
 
 func main() {
@@ -103,8 +112,8 @@ func main() {
 	}
 
 	fmt.Println(d1)
-	StrictMode = false
-	d2 := map[string]interface{}{
+
+	d2, err := DictFromMap(map[string]interface{}{
 		"greeting": map[string]interface{}{
 			"English":  []byte{72, 101, 108, 108, 111},
 			"Japanese": "Konnichiwa",
@@ -112,6 +121,9 @@ func main() {
 		},
 		"fruit":          []string{"apple", "banana", "orange"},
 		"selling points": ArrayFromStrings("simple", "general", "human-sympathetic"),
+	})
+	if err != nil {
+		log.Fatal(err)
 	}
-	fmt.Println(DictFromMap(d2))
+	fmt.Println(d2)
 }
