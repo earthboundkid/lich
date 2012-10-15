@@ -67,3 +67,12 @@ func TestInvalidMap(t *testing.T) {
 		t.Fatal(d2, err)
 	}
 }
+
+func TestSimpleDataParsing(t *testing.T) {
+	s := "5<hello>"
+	element, err := lich.Parse(s)
+	if err != nil || element != lich.Data("hello") {
+		t.Fatalf("Parsed %q\nGot element:\t%#v, %s\nError:\t%#v", s, element, element, err)
+	}
+
+}
