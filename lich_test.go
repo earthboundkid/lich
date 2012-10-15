@@ -76,3 +76,13 @@ func TestSimpleDataParsing(t *testing.T) {
 	}
 
 }
+
+func TestSimpleArrayParsing(t *testing.T) {
+	s := "26[5<apple>6<banana>6<orange>]"
+	array := lich.Array{lich.Data("apple"), lich.Data("banana"), lich.Data("orange")}
+
+	element, err := lich.Parse(s)
+	if err != nil || element.String() != array.String() {
+		t.Fatalf("Parsed %q\nGot element:\t%#v, %s\nError:\t%#v", s, element, element, err)
+	}
+}
