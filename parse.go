@@ -11,30 +11,50 @@ func Parse(s string) (Element, error) {
 	if len(s) < 1 {
 		return nil, UnparseableError
 	}
-	r := rune(s[0])
 
-	if !isdigit(r) {
+	el := getElement(s, 0, len(s))
+
+	if el == nil {
 		return nil, UnparseableError
 	}
 
-	start, stop := 0, 1
-	for isdigit(rune(s[stop])) {
-	}
-
-	size, err := strconv.Atoi(s[start:stop])
-
-	if err != nil {
-		//I don't think this is reachable.
-		return nil, UnparseableError
-	}
-
-	if rune(s[stop]) != '<' || rune(s[stop+size+1]) != '>' {
-		return nil, UnparseableError
-	}
-
-	return Data(s[stop+1 : stop+size+1]), nil
+	return el, nil
 }
 
-func isdigit(r rune) bool {
+func isdigit(r uint8) bool {
 	return r >= '0' && r <= '9'
+}
+
+func getElement(s string, start, stop int) Element {
+	r := s[start]
+
+	if !isdigit(r) {
+		return nil
+	}
+
+	current := start + 1
+	for isdigit(s[current]) {
+		current++
+	}
+
+	size, _ := strconv.Atoi(s[start:current])
+
+	//If this doesn't match, the reported size is screwed up.
+	//Doing this check helps make sure we don't try to read too far.
+	if current+size+2 <= stop {
+		return nil
+	}
+
+	switch s[current] {
+	case '<':
+		return getData(s, current+1, stop)
+	}
+	return nil
+}
+
+func getData(s string, start, stop int) Element {
+	if s[stop-1] != '>' {
+		return nil
+	}
+	return Data(s[start : stop-1])
 }
