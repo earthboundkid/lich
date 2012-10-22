@@ -53,6 +53,30 @@ func ExampleDictFromMap() {
 
 }
 
+func TestEmptyData(t *testing.T) {
+	data := lich.Data("")
+	str := data.String()
+	if str != "0<>" {
+		t.Fatal(data, str)
+	}
+}
+
+func TestEmptyArray(t *testing.T) {
+	array := lich.Array{}
+	str := array.String()
+	if str != "0[]" {
+		t.Fatal(array, str)
+	}
+}
+
+func TestEmptyDict(t *testing.T) {
+	d := lich.Dict{}
+	str := d.String()
+	if str != "0{}" {
+		t.Fatal(d, str)
+	}
+}
+
 func TestInvalidMap(t *testing.T) {
 	d2, err := lich.DictFromMap(map[string]interface{}{
 		"greeting": map[string]interface{}{
