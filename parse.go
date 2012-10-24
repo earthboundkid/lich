@@ -21,24 +21,14 @@ func Parse(s string) (Element, error) {
 	return topLevel(s, 0, len(s))
 }
 
-func isdigit(r uint8) bool {
-	return r >= '0' && r <= '9'
-}
-
 func topLevel(s string, start, stop int) (Element, error) {
 	if len(s) < 1 {
 		return nil, UnparseableError{s, 0, "Empty string!"}
 	}
 
-	current := start
-	for isdigit(s[current]) {
-		current++
-	}
-
-	size, err := strconv.Atoi(s[start:current])
-
+	size, current, err := sizePrefix(s, start)
 	if err != nil {
-		return nil, UnparseableError{s, current, "Non-digit start"}
+		return nil, err
 	}
 
 	//If this doesn't match, the reported size is screwed up.
@@ -59,15 +49,32 @@ func topLevel(s string, start, stop int) (Element, error) {
 			return nil, UnparseableError{s, stop - 1, "No matching ]"}
 		}
 
-		return getArray(s, current+1, stop-1), nil
+		return getArrayBody(s, current+1, stop-1)
 
 	}
 	return nil, UnparseableError{s, current, "Invalid separator"}
 }
 
-func getArray(s string, start, stop int) Element {
-	if s[stop] != ']' {
-		return nil
+func sizePrefix(s string, start int) (size, current int, err error) {
+	current = start + 1
+	for isdigit(s[current]) {
+		current++
 	}
-	return Data(s[start:stop])
+
+	size, err = strconv.Atoi(s[start:current])
+
+	if err != nil {
+		return -1, -1, UnparseableError{s, current,
+			"Non-digit at start of Element"}
+	}
+
+	return size, current, nil
+}
+
+func isdigit(r uint8) bool {
+	return r >= '0' && r <= '9'
+}
+
+func getArrayBody(s string, start, stop int) (Element, error) {
+	return nil, UnparseableError{s, stop - 1, "Arrays are hard."}
 }
