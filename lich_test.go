@@ -2,8 +2,9 @@ package lich_test
 
 import (
 	"fmt"
-	"github.com/earthboundkid/lich"
 	"testing"
+
+	"github.com/earthboundkid/lich"
 )
 
 func ExampleData() {
@@ -89,24 +90,5 @@ func TestInvalidMap(t *testing.T) {
 	})
 	if (err != lich.UnknownTypeError{"Dog", 9.0}) {
 		t.Fatal(d2, err)
-	}
-}
-
-func TestSimpleDataParsing(t *testing.T) {
-	s := "5<hello>"
-	element, err := lich.Parse(s)
-	if err != nil || element != lich.Data("hello") {
-		t.Fatalf("Parsed %q\nGot element:\t%#v, %s\nError:\t%#v", s, element, element, err)
-	}
-
-}
-
-func TestSimpleArrayParsing(t *testing.T) {
-	s := "26[5<apple>6<banana>6<orange>]"
-	array := lich.Array{lich.Data("apple"), lich.Data("banana"), lich.Data("orange")}
-
-	element, err := lich.Parse(s)
-	if err != nil || element.String() != array.String() {
-		t.Fatalf("Parsed %q\nGot element:\t%#v, %s\nError:\t%#v", s, element, element, err)
 	}
 }
