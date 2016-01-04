@@ -6,7 +6,7 @@ import (
 	"sort"
 )
 
-//DictFromMap returns an UnknownTypeError 
+//DictFromMap returns an UnknownTypeError
 //when it encounters values of an unknown type.
 type UnknownTypeError struct {
 	Key   string
@@ -22,9 +22,9 @@ type Element interface {
 	String() string
 }
 
-type Data string
+type DataString string
 
-func (data Data) String() string {
+func (data DataString) String() string {
 	return fmt.Sprintf("%d<%s>", len(data), string(data))
 }
 
@@ -43,12 +43,12 @@ func (array Array) String() string {
 func ArrayFromStrings(strings ...string) Array {
 	array := make(Array, 0, len(strings))
 	for _, s := range strings {
-		array = append(array, Data(s))
+		array = append(array, DataString(s))
 	}
 	return array
 }
 
-type Dict map[Data]Element
+type Dict map[DataString]Element
 
 func (d Dict) String() string {
 	keys := make([]string, 0, len(d))
@@ -61,7 +61,7 @@ func (d Dict) String() string {
 	var b bytes.Buffer
 
 	for _, key := range keys {
-		de := Data(key)
+		de := DataString(key)
 		b.WriteString(de.String())
 		b.WriteString(d[de].String())
 	}
@@ -73,27 +73,27 @@ func DictFromMap(m map[string]interface{}) (Dict, error) {
 	d := make(Dict)
 	for key := range m {
 		switch value := m[key].(type) {
-		case Data:
-			d[Data(key)] = value
+		case DataString:
+			d[DataString(key)] = value
 		case Array:
-			d[Data(key)] = value
+			d[DataString(key)] = value
 		case Dict:
-			d[Data(key)] = value
+			d[DataString(key)] = value
 
 		case string:
-			d[Data(key)] = Data(value)
+			d[DataString(key)] = DataString(value)
 		case []byte:
-			d[Data(key)] = Data(value)
+			d[DataString(key)] = DataString(value)
 
 		case []string:
-			d[Data(key)] = ArrayFromStrings(value...)
+			d[DataString(key)] = ArrayFromStrings(value...)
 
 		case map[string]interface{}:
 			subdict, err := DictFromMap(value)
 			if err != nil {
 				return Dict{}, err
 			}
-			d[Data(key)] = subdict
+			d[DataString(key)] = subdict
 
 		default:
 			return Dict{}, UnknownTypeError{key, value}
