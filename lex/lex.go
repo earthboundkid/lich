@@ -1,18 +1,21 @@
-package lich
+package lex
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 )
 
-type LexTokenType int
+// TokenType is an enum for the lexer's tokens
+type TokenType int
 
-func (t LexTokenType) String() string {
-	return []string{
-		Data:       "Data",
+func (t TokenType) String() string {
+	return [...]string{
+		DataToken:  "Data",
 		ArrayOpen:  "ArrayOpen",
 		ArrayClose: "ArrayClose",
 		DictOpen:   "DictOpen",
@@ -22,38 +25,40 @@ func (t LexTokenType) String() string {
 
 // Lexer token enum
 const (
-	Data LexTokenType = iota
+	DataToken TokenType = iota
 	ArrayOpen
 	ArrayClose
 	DictOpen
 	DictClose
 )
 
-type LexToken struct {
-	LexTokenType
+// Token has a TokenType. Tokens of type DataToken also have Data []byte.
+type Token struct {
+	TokenType
 	Data []byte
 }
 
-func (t LexToken) String() string {
-	if t.LexTokenType == Data {
-		return fmt.Sprintf("%v<%s>", t.LexTokenType, t.Data)
+func (t Token) String() string {
+	if t.TokenType == DataToken {
+		return fmt.Sprintf("%v<%s>", t.TokenType, t.Data)
 	}
-	return t.LexTokenType.String()
+	return t.TokenType.String()
 }
 
-// Errors introduced by Lex
+// Errors introduced by lexer
 var (
 	ErrUnexpectedChar     = errors.New("Unexpected character")
 	ErrUnreadableSize     = errors.New("Couldn't read size of element")
 	ErrMissingClosingChar = errors.New("Missing closing character")
 )
 
-func Lex(r io.Reader) ([]LexToken, error) {
+// FromReader takes an io.Reader and returns lexer tokens or an error.
+func FromReader(r io.Reader) ([]Token, error) {
 	b := bufio.NewReader(r)
 	return lexElement(b)
 }
 
-func lexElement(b *bufio.Reader) ([]LexToken, error) {
+func lexElement(b *bufio.Reader) ([]Token, error) {
 	// Spec says size will always fit into 20 bytes or less
 	const maxSizeLength = 20
 
@@ -101,7 +106,7 @@ func isDigit(b byte) bool {
 	return b >= '0' && b <= '9'
 }
 
-func lexData(b *bufio.Reader, size int64) ([]LexToken, error) {
+func lexData(b *bufio.Reader, size int64) ([]Token, error) {
 	data := make([]byte, int(size))
 	_, err := io.ReadFull(b, data)
 	if err != nil {
@@ -116,11 +121,11 @@ func lexData(b *bufio.Reader, size int64) ([]LexToken, error) {
 		return nil, ErrMissingClosingChar
 	}
 
-	tokens := []LexToken{{LexTokenType: Data, Data: data}}
+	tokens := []Token{{TokenType: DataToken, Data: data}}
 	return tokens, nil
 }
 
-func lexArrayOrDict(b *bufio.Reader, size int64, isArray bool) ([]LexToken, error) {
+func lexArrayOrDict(b *bufio.Reader, size int64, isArray bool) ([]Token, error) {
 	var (
 		closingChar = byte(']')
 		openingType = ArrayOpen
@@ -131,7 +136,7 @@ func lexArrayOrDict(b *bufio.Reader, size int64, isArray bool) ([]LexToken, erro
 		openingType = DictOpen
 		closingType = DictClose
 	}
-	tokens := []LexToken{{LexTokenType: openingType}}
+	tokens := []Token{{TokenType: openingType}}
 
 	lb := bufio.NewReader(io.LimitReader(b, size))
 
@@ -158,6 +163,18 @@ func lexArrayOrDict(b *bufio.Reader, size int64, isArray bool) ([]LexToken, erro
 	if c != closingChar {
 		return nil, ErrMissingClosingChar
 	}
-	tokens = append(tokens, LexToken{LexTokenType: closingType})
+	tokens = append(tokens, Token{TokenType: closingType})
 	return tokens, nil
+}
+
+// FromString is a convenience method for lexing strings.
+func FromString(s string) ([]Token, error) {
+	r := strings.NewReader(s)
+	return FromReader(r)
+}
+
+// FromBytes is a convenience method for lexing a slice of bytes.
+func FromBytes(b []byte) ([]Token, error) {
+	r := bytes.NewReader(b)
+	return FromReader(r)
 }
