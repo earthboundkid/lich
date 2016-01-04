@@ -83,7 +83,7 @@ func lexElement(b readScanner) ([]LexToken, error) {
 	// Turn the size into an int
 	size, err := strconv.Atoi(string(sizeBuf[:i]))
 	if err != nil {
-		return nil, err
+		return nil, ErrUnexpectedChar
 	}
 
 	c, err := b.ReadByte()
