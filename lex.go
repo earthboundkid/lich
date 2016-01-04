@@ -4,11 +4,22 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
 )
 
 type LexTokenType int
+
+func (t LexTokenType) String() string {
+	return []string{
+		Data:       "Data",
+		ArrayOpen:  "ArrayOpen",
+		ArrayClose: "ArrayClose",
+		DictOpen:   "DictOpen",
+		DictClose:  "DictClose",
+	}[int(t)]
+}
 
 // Lexer token enum
 const (
@@ -22,6 +33,13 @@ const (
 type LexToken struct {
 	LexTokenType
 	Data []byte
+}
+
+func (t LexToken) String() string {
+	if t.LexTokenType == Data {
+		return fmt.Sprintf("%v<%s>", t.LexTokenType, t.Data)
+	}
+	return t.LexTokenType.String()
 }
 
 // Errors introduced by Lex
