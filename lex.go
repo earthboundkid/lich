@@ -2,7 +2,6 @@ package lich
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -45,7 +44,7 @@ func (t LexToken) String() string {
 // Errors introduced by Lex
 var (
 	ErrUnexpectedChar     = errors.New("Unexpected character")
-	ErrBufferTooShort     = errors.New("Input too short")
+	ErrUnreadableSize     = errors.New("Couldn't read size of element")
 	ErrMissingClosingChar = errors.New("Missing closing character")
 )
 
@@ -54,12 +53,7 @@ func Lex(r io.Reader) ([]LexToken, error) {
 	return lexElement(b)
 }
 
-type readScanner interface {
-	io.Reader
-	io.ByteScanner
-}
-
-func lexElement(b readScanner) ([]LexToken, error) {
+func lexElement(b *bufio.Reader) ([]LexToken, error) {
 	// Spec says size will always fit into 20 bytes or less
 	const maxSizeLength = 20
 
@@ -81,9 +75,9 @@ func lexElement(b readScanner) ([]LexToken, error) {
 	}
 
 	// Turn the size into an int
-	size, err := strconv.Atoi(string(sizeBuf[:i]))
+	size, err := strconv.ParseInt(string(sizeBuf[:i]), 10, 64)
 	if err != nil {
-		return nil, ErrUnexpectedChar
+		return nil, ErrUnreadableSize
 	}
 
 	c, err := b.ReadByte()
@@ -91,45 +85,42 @@ func lexElement(b readScanner) ([]LexToken, error) {
 		return nil, err
 	}
 
-	// Bail out on bad data before making a possibly large buffer
-	switch c {
-	case '<', '[', '{':
-	default:
-		return nil, ErrUnexpectedChar
-	}
-
-	buf := make([]byte, size+1) // +1 for terminal character
-	if _, err := io.ReadFull(b, buf); err != nil {
-		return nil, err
-	}
-
 	switch c {
 	case '<':
-		return lexData(buf)
+		return lexData(b, size)
 	case '[':
-		return lexArrayOrDict(buf, true)
+		return lexArrayOrDict(b, size, true)
 	case '{':
-		return lexArrayOrDict(buf, false)
+		return lexArrayOrDict(b, size, false)
 	}
-	panic("unreachable")
+
+	return nil, ErrUnexpectedChar
 }
 
 func isDigit(b byte) bool {
 	return b >= '0' && b <= '9'
 }
 
-func lexData(buf []byte) ([]LexToken, error) {
-	if len(buf) < 1 {
-		return nil, ErrBufferTooShort
+func lexData(b *bufio.Reader, size int64) ([]LexToken, error) {
+	data := make([]byte, int(size))
+	_, err := io.ReadFull(b, data)
+	if err != nil {
+		return nil, err
 	}
-	if buf[len(buf)-1] != '>' {
+
+	c, err := b.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+	if c != '>' {
 		return nil, ErrMissingClosingChar
 	}
-	tokens := []LexToken{{LexTokenType: Data, Data: buf[:len(buf)-1]}}
+
+	tokens := []LexToken{{LexTokenType: Data, Data: data}}
 	return tokens, nil
 }
 
-func lexArrayOrDict(buf []byte, isArray bool) ([]LexToken, error) {
+func lexArrayOrDict(b *bufio.Reader, size int64, isArray bool) ([]LexToken, error) {
 	var (
 		closingChar = byte(']')
 		openingType = ArrayOpen
@@ -140,24 +131,33 @@ func lexArrayOrDict(buf []byte, isArray bool) ([]LexToken, error) {
 		openingType = DictOpen
 		closingType = DictClose
 	}
-
-	// First check for consistency before parsing guts
-	if buf[len(buf)-1] != closingChar {
-		return nil, ErrMissingClosingChar
-	}
-
 	tokens := []LexToken{{LexTokenType: openingType}}
 
-	b := bytes.NewReader(buf)
+	lb := bufio.NewReader(io.LimitReader(b, size))
 
-	for b.Len() > 1 {
-		newTokens, err := lexElement(b)
+	for {
+		_, err := lb.ReadByte()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		lb.UnreadByte()
+		newTokens, err := lexElement(lb)
 		if err != nil {
 			return nil, err
 		}
 		tokens = append(tokens, newTokens...)
 	}
 
+	c, err := b.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+	if c != closingChar {
+		return nil, ErrMissingClosingChar
+	}
 	tokens = append(tokens, LexToken{LexTokenType: closingType})
 	return tokens, nil
 }
