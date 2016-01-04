@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/earthboundkid/lich"
+	"github.com/carlmjohnson/lich"
 )
 
 func ExampleData() {
-	data := lich.Data("Hello, World!")
+	data := lich.DataString("Hello, World!")
 
 	fmt.Println(data)
 	//Output: 13<Hello, World!>
 }
 
 func ExampleArray() {
-	array := lich.Array{lich.Data("apple"), lich.Data("banana"), lich.Data("orange")}
+	array := lich.Array{lich.DataString("apple"), lich.DataString("banana"), lich.DataString("orange")}
 
 	fmt.Println(array)
 	//Output: 26[5<apple>6<banana>6<orange>]
@@ -32,8 +32,8 @@ func ExampleArrayFromStrings() {
 func ExampleDict() {
 	d1 := lich.Dict{
 		"selling points": lich.ArrayFromStrings("simple", "general", "human-sympathetic"),
-		"greeting":       lich.Data([]byte{72, 101, 108, 108, 111}),
-		"fruit":          lich.Array{lich.Data("apple"), lich.Data("banana"), lich.Data("orange")},
+		"greeting":       lich.DataString([]byte{72, 101, 108, 108, 111}),
+		"fruit":          lich.Array{lich.DataString("apple"), lich.DataString("banana"), lich.DataString("orange")},
 	}
 
 	fmt.Println(d1)
@@ -55,7 +55,7 @@ func ExampleDictFromMap() {
 }
 
 func TestEmptyData(t *testing.T) {
-	data := lich.Data("")
+	data := lich.DataString("")
 	str := data.String()
 	if str != "0<>" {
 		t.Fatal(data, str)
