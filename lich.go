@@ -19,16 +19,22 @@ func (u UnknownTypeError) Error() string {
 }
 
 type Element interface {
-	String() string
+	fmt.Stringer
+	// Dummy private method to maintain package boundaries
+	isElement()
 }
 
 type DataString string
+
+func (d DataString) isElement() {}
 
 func (data DataString) String() string {
 	return fmt.Sprintf("%d<%s>", len(data), string(data))
 }
 
 type Array []Element
+
+func (a Array) isElement() {}
 
 func (array Array) String() string {
 	var b bytes.Buffer
@@ -49,6 +55,8 @@ func ArrayFromStrings(strings ...string) Array {
 }
 
 type Dict map[DataString]Element
+
+func (d Dict) isElement() {}
 
 func (d Dict) String() string {
 	keys := make([]string, 0, len(d))
