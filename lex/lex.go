@@ -13,15 +13,8 @@ import (
 // TokenType is an enum for the lexer's tokens
 type TokenType int
 
-func (t TokenType) String() string {
-	return [...]string{
-		DataToken:  "Data",
-		ArrayOpen:  "ArrayOpen",
-		ArrayClose: "ArrayClose",
-		DictOpen:   "DictOpen",
-		DictClose:  "DictClose",
-	}[int(t)]
-}
+// Auto-stringer:
+//go:generate stringer -type=TokenType
 
 // Lexer token enum
 const (
