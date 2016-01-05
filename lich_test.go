@@ -92,3 +92,46 @@ func TestInvalidMap(t *testing.T) {
 		t.Fatal(d2, err)
 	}
 }
+
+var decodeTests = []struct {
+	input string
+	err   bool
+}{
+	{"", true},
+	{"0<>", false},
+	{"0[]", false},
+	{"4[1<a>]", false},
+	{"7[4[1<a>]]", false},
+	{"26{8<greeting>11<hello world>}", false},
+	{"26[5<apple>6<banana>6<orange>]", false},
+	{"126{5<fruit>26[5<apple>6<banana>6<orange>]8<greeting>11<hello world>" +
+		"14<selling points>40[6<simple>7<general>17<human-sympathetic>]}",
+		false},
+}
+
+func TestDecodeErrors(t *testing.T) {
+	for _, test := range decodeTests {
+		_, err := lich.Decode(test.input)
+		if (err != nil) != test.err {
+			t.Errorf("Decode(%v).err = %v", test.input, err)
+		}
+	}
+}
+
+func TestDecodeRoundTrip(t *testing.T) {
+	for _, test := range decodeTests {
+		if test.err {
+			continue
+		}
+		el, err := lich.Decode(test.input)
+		if err != nil {
+			t.Errorf("Decode(%v).err = %v", test.input, err)
+		}
+		if el == nil {
+			t.Errorf("Decode(%v) = %v", test.input, el)
+		}
+		if el.String() != test.input {
+			t.Errorf("Decode(%v) = %v", test.input, el)
+		}
+	}
+}
