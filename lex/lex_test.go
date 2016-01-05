@@ -1,12 +1,14 @@
 package lex_test
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/carlmjohnson/lich/lex"
 )
 
-func TestLexErrors(t *testing.T) {
+func TestScannerErrors(t *testing.T) {
 	var tests = []struct {
 		input string
 		err   bool
@@ -15,6 +17,7 @@ func TestLexErrors(t *testing.T) {
 		{"0<>", false},
 		{"0[]", false},
 		{"0{}", false},
+		{"0{}x", true},
 		{"1<>", true},
 		{"1<a>", false},
 		{"26{8<greeting>11<hello world>}", false},
@@ -24,8 +27,14 @@ func TestLexErrors(t *testing.T) {
 			false},
 	}
 	for _, test := range tests {
-		if _, err := lex.FromString(test.input); (err != nil) != test.err {
-			t.Errorf("lex.FromString(%q).error = %v", test.input, err)
+		fmt.Println(test.input)
+		r := strings.NewReader(test.input)
+		s := lex.NewScanner(r)
+		for s.Next() {
+		}
+
+		if (s.Error() != nil) != test.err {
+			t.Errorf("lex.FromString(%q).error = %v", test.input, s.Error())
 		}
 	}
 }
